@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { loginAdmin, checkAdminSession } from '@/app/actions/auth';
@@ -56,8 +57,14 @@ export default function AdminLoginPage() {
 
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-emerald-600" />
+            <div className="flex items-center justify-center mx-auto mb-4">
+              <Image
+                src="/Logo Asrama_Biru.png"
+                alt="Logo Asrama As-Salam"
+                width={80}
+                height={80}
+                priority
+              />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Panel</h1>
             <p className="text-gray-600 text-sm">Masuk ke dashboard admin</p>
