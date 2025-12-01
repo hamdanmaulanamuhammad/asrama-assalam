@@ -9,12 +9,15 @@ import Modal from './ui/Modal';
 import ImageUpload from './ui/ImageUpload';
 import { User } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
+import { checkDuplicateAttendance } from '@/app/actions/attendance';
 
 export default function PresensiForm() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   const [formData, setFormData] = useState({
     tanggal: format(new Date(), 'yyyy-MM-dd'),
@@ -58,8 +61,17 @@ export default function PresensiForm() {
       return;
     }
 
-    // Prepare preview
+    // Check duplicate attendance
     const selectedUser = users.find(u => u.id === formData.nama_id);
+    const checkResult = await checkDuplicateAttendance(formData.nama_id, formData.tanggal);
+    
+    if (checkResult.success && checkResult.exists) {
+      setErrorMessage(`${selectedUser?.nama || 'Anda'} sudah presensi hari ini`);
+      setShowError(true);
+      return;
+    }
+
+    // Prepare preview
     const tukarUser = users.find(u => u.id === formData.tukar_dengan_id);
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -248,14 +260,30 @@ export default function PresensiForm() {
       {/* Success Modal */}
       <Modal
         isOpen={showSuccess}
-        onClose={() => setShowSuccess(false)}
+        onClose={() => window.location.reload()}
         title="Sukses"
         size="sm"
       >
         <div className="text-center space-y-4">
           <div className="text-green-600 text-5xl">✓</div>
           <p className="text-lg">Presensi berhasil dikirim!</p>
-          <Button onClick={() => setShowSuccess(false)} className="w-full">
+          <Button onClick={() => window.location.reload()} className="w-full">
+            OK
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Error Modal */}
+      <Modal
+        isOpen={showError}
+        onClose={() => setShowError(false)}
+        title="Gagal"
+        size="sm"
+      >
+        <div className="text-center space-y-4">
+          <div className="text-red-600 text-5xl">✕</div>
+          <p className="text-lg">{errorMessage}</p>
+          <Button onClick={() => setShowError(false)} className="w-full" variant="secondary">
             OK
           </Button>
         </div>

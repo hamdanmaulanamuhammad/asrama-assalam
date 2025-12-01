@@ -25,6 +25,23 @@ export async function uploadPhoto(file: File) {
   }
 }
 
+export async function checkDuplicateAttendance(nama_id: string, tanggal: string) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('attendance')
+      .select('id, users:nama_id(nama)')
+      .eq('nama_id', nama_id)
+      .eq('tanggal', tanggal)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return { success: true, exists: !!data, nama: data?.users?.nama };
+  } catch (error) {
+    return { success: false, error: 'Failed to check attendance' };
+  }
+}
+
 export async function createAttendance(formData: {
   tanggal: string;
   nama_id: string;
