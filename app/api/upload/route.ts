@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import sharp from 'sharp';
 
@@ -56,9 +56,13 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const fileName = `${Date.now()}.jpg`;
     
+    // Ensure uploads directory exists
+    const uploadsDir = join(process.cwd(), 'public', 'uploads');
+    await mkdir(uploadsDir, { recursive: true });
+    
     // Save to public/uploads directory
-    const path = join(process.cwd(), 'public', 'uploads', fileName);
-    await writeFile(path, processedImage);
+    const filePath = join(uploadsDir, fileName);
+    await writeFile(filePath, processedImage);
 
     // Return the public URL
     const publicUrl = `/uploads/${fileName}`;
@@ -69,8 +73,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Upload error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to upload file';
     return NextResponse.json(
-      { success: false, error: 'Failed to upload file' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
