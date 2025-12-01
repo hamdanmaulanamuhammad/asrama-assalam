@@ -27,34 +27,54 @@ export async function POST(request: NextRequest) {
     // Get current timestamp for watermark
     const now = new Date();
     const timestamp = now.toLocaleString('id-ID', {
-      dateStyle: 'short',
-      timeStyle: 'medium',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
       timeZone: 'Asia/Jakarta'
     });
 
     // Get image metadata
     const image = sharp(buffer);
     const metadata = await image.metadata();
-    const { width = 1000, height = 1000 } = metadata;
+    const width = metadata.width || 1000;
+    const height = metadata.height || 1000;
 
-    // Create watermark text as SVG
-    const fontSize = Math.max(Math.floor(width / 25), 20);
-    const padding = Math.floor(fontSize * 0.8);
-    
-    const svgText = `
+    // Calculate dimensions for watermark
+    const fontSize = Math.max(Math.floor(width / 30), 16);
+    const padding = Math.floor(fontSize * 1);
+    const boxHeight = fontSize + padding * 2;
+
+    // Create watermark background and text as SVG
+    const svgOverlay = `
       <svg width="${width}" height="${height}">
-        <rect x="0" y="${height - fontSize - padding * 2}" width="${width}" height="${fontSize + padding * 2}" fill="rgba(0, 0, 0, 0.6)" />
-        <text x="${padding}" y="${height - padding}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="white">
-          ${timestamp}
-        </text>
+        <rect 
+          x="0" 
+          y="${height - boxHeight}" 
+          width="${width}" 
+          height="${boxHeight}" 
+          fill="rgba(0, 0, 0, 0.7)" 
+        />
+        <text 
+          x="${padding}" 
+          y="${height - padding - fontSize / 4}" 
+          font-family="Arial, Helvetica, sans-serif" 
+          font-size="${fontSize}" 
+          font-weight="bold" 
+          fill="white"
+          style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8);"
+        >${timestamp}</text>
       </svg>
     `;
 
     // Add watermark and process image
     const processedImage = await image
       .composite([{
-        input: Buffer.from(svgText),
-        gravity: 'southwest'
+        input: Buffer.from(svgOverlay),
+        top: 0,
+        left: 0
       }])
       .jpeg({ quality: 90 })
       .toBuffer();
