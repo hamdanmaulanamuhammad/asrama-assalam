@@ -1,10 +1,10 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { unstable_cache, revalidatePath, revalidateTag } from 'next/cache';
 
-export async function getUsers() {
-  try {
+const getCachedUsers = unstable_cache(
+  async () => {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('users')
@@ -12,6 +12,18 @@ export async function getUsers() {
       .order('nama', { ascending: true });
 
     if (error) throw error;
+    return data;
+  },
+  ['users-list'],
+  {
+    revalidate: 60, // Cache for 60 seconds
+    tags: ['users']
+  }
+);
+
+export async function getUsers() {
+  try {
+    const data = await getCachedUsers();
     return { success: true, data };
   } catch (error: unknown) {
     console.error('Get users error:', error);
@@ -30,6 +42,7 @@ export async function createUser(nama: string) {
       .single();
 
     if (error) throw error;
+    revalidateTag('users');
     revalidatePath('/admin/dashboard');
     return { success: true, data };
   } catch (error: unknown) {
@@ -50,6 +63,7 @@ export async function updateUser(id: string, nama: string) {
       .single();
 
     if (error) throw error;
+    revalidateTag('users');
     revalidatePath('/admin/dashboard');
     return { success: true, data };
   } catch (error: unknown) {
@@ -68,6 +82,7 @@ export async function deleteUser(id: string) {
       .eq('id', id);
 
     if (error) throw error;
+    revalidateTag('users');
     revalidatePath('/admin/dashboard');
     return { success: true };
   } catch (error: unknown) {

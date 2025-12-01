@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useMemo } from 'react';
 import { format } from 'date-fns';
 import Input from './ui/Input';
 import Select from './ui/Select';
@@ -10,6 +10,7 @@ import ImageUpload from './ui/ImageUpload';
 import { User } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { checkDuplicateAttendance } from '@/app/actions/attendance';
+import { getCache, setCache } from '@/lib/cache';
 
 export default function PresensiForm() {
   const [users, setUsers] = useState<User[]>([]);
@@ -42,9 +43,20 @@ export default function PresensiForm() {
   }, []);
 
   const fetchUsers = async () => {
+    // Try to get from cache first
+    const cached = getCache<User[]>('users');
+    if (cached) {
+      setUsers(cached);
+      return;
+    }
+
+    // Fetch from database
     const supabase = createClient();
     const { data } = await supabase.from('users').select('*').order('nama');
-    if (data) setUsers(data);
+    if (data) {
+      setUsers(data);
+      setCache('users', data);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -135,7 +147,10 @@ export default function PresensiForm() {
     }
   };
 
-  const availableTukarUsers = users.filter(u => u.id !== formData.nama_id);
+  const availableTukarUsers = useMemo(
+    () => users.filter(u => u.id !== formData.nama_id),
+    [users, formData.nama_id]
+  );
 
   return (
     <>
