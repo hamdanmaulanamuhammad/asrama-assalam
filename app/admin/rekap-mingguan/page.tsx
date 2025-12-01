@@ -13,6 +13,7 @@ import { X } from 'lucide-react';
 export default function RekapMingguanPage() {
   const [attendances, setAttendances] = useState<AttendanceWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedWeek, setSelectedWeek] = useState('');
   const [selectedName, setSelectedName] = useState('');
@@ -21,6 +22,7 @@ export default function RekapMingguanPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const fetchData = async () => {
+    setLoading(true);
     const [attendanceResult, usersResult] = await Promise.all([
       getAttendance({}),
       getUsers(),
@@ -51,6 +53,7 @@ export default function RekapMingguanPage() {
     if (usersResult.success && usersResult.data) {
       setUsers(usersResult.data);
     }
+    setLoading(false);
   };
 
   // Generate weeks when month changes
@@ -80,6 +83,7 @@ export default function RekapMingguanPage() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const groupedData = () => {
@@ -149,7 +153,32 @@ export default function RekapMingguanPage() {
       </div>
 
       <div className="space-y-4">
-        {Object.keys(grouped).length === 0 ? (
+        {loading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-pulse">
+              <div className="bg-gray-300 px-4 md:px-6 py-6">
+                <div className="h-6 bg-gray-400 rounded w-64 mb-2"></div>
+                <div className="h-4 bg-gray-400 rounded w-24"></div>
+              </div>
+              <div className="p-4 md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array.from({ length: 6 }).map((_, cardIdx) => (
+                    <div key={cardIdx} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                          <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : Object.keys(grouped).length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
