@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { unstable_cache, revalidatePath, revalidateTag } from 'next/cache';
+import { unstable_cache, revalidatePath } from 'next/cache';
 
 const getCachedUsers = unstable_cache(
   async () => {
@@ -42,7 +42,7 @@ export async function createUser(nama: string) {
       .single();
 
     if (error) throw error;
-    revalidateTag('users');
+    revalidatePath('/', 'layout');
     revalidatePath('/admin/dashboard');
     return { success: true, data };
   } catch (error: unknown) {
@@ -63,11 +63,11 @@ export async function updateUser(id: string, nama: string) {
       .single();
 
     if (error) throw error;
-    revalidateTag('users');
+    revalidatePath('/', 'layout');
     revalidatePath('/admin/dashboard');
-    return { success: true, data };
+    return { success: true };
   } catch (error: unknown) {
-    console.error('Update user error:', error);
+    console.error('Delete user error:', error);
     const message = error instanceof Error ? error.message : 'Failed to update user';
     return { success: false, error: message };
   }
@@ -82,7 +82,7 @@ export async function deleteUser(id: string) {
       .eq('id', id);
 
     if (error) throw error;
-    revalidateTag('users');
+    revalidatePath('/');
     revalidatePath('/admin/dashboard');
     return { success: true };
   } catch (error: unknown) {
