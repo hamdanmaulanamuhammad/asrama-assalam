@@ -14,6 +14,7 @@ export default function RekapPage() {
   const [attendances, setAttendances] = useState<AttendanceWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     nama_id: '',
     status: '',
@@ -22,6 +23,7 @@ export default function RekapPage() {
   });
 
   const fetchData = async () => {
+    setLoading(true);
     const [attendanceResult, usersResult] = await Promise.all([
       getAttendance(filters),
       getUsers(),
@@ -34,6 +36,7 @@ export default function RekapPage() {
     if (usersResult.success && usersResult.data) {
       setUsers(usersResult.data);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -111,7 +114,19 @@ export default function RekapPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {attendances.length === 0 ? (
+            {loading ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <tr key={idx} className="animate-pulse">
+                  <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-8"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+                  <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-full w-16"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-12"></div></td>
+                </tr>
+              ))
+            ) : attendances.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center gap-2">
@@ -158,7 +173,23 @@ export default function RekapPage() {
 
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-3">
-        {attendances.length === 0 ? (
+        {loading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 animate-pulse">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-16 h-16 bg-gray-200 rounded-lg"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                    <div className="h-3 bg-gray-200 rounded w-12"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : attendances.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

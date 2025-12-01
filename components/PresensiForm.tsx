@@ -15,6 +15,7 @@ import { getCache, setCache } from '@/lib/cache';
 export default function PresensiForm() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [showValidation, setShowValidation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -43,10 +44,12 @@ export default function PresensiForm() {
   }, []);
 
   const fetchUsers = async () => {
+    setLoadingUsers(true);
     // Try to get from cache first
     const cached = getCache<User[]>('users');
     if (cached) {
       setUsers(cached);
+      setLoadingUsers(false);
       return;
     }
 
@@ -57,6 +60,7 @@ export default function PresensiForm() {
       setUsers(data);
       setCache('users', data);
     }
+    setLoadingUsers(false);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -154,22 +158,32 @@ export default function PresensiForm() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          type="date"
-          label="Tanggal"
-          value={formData.tanggal}
-          onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })}
-          required
-        />
+      {loadingUsers ? (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+          <div className="h-32 bg-gray-200 rounded-lg"></div>
+          <div className="h-12 bg-gray-200 rounded-lg"></div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="date"
+            label="Tanggal"
+            value={formData.tanggal}
+            onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })}
+            required
+          />
 
-        <Select
-          label="Nama"
-          value={formData.nama_id}
-          onChange={(e) => setFormData({ ...formData, nama_id: e.target.value })}
-          options={users.map(u => ({ value: u.id, label: u.nama }))}
-          required
-        />
+          <Select
+            label="Nama"
+            value={formData.nama_id}
+            onChange={(e) => setFormData({ ...formData, nama_id: e.target.value })}
+            options={users.map(u => ({ value: u.id, label: u.nama }))}
+            required
+          />
 
         <Select
           label="Status"
@@ -206,10 +220,11 @@ export default function PresensiForm() {
           value={formData.foto}
         />
 
-        <Button type="submit" className="w-full">
-          Submit Presensi
-        </Button>
-      </form>
+          <Button type="submit" className="w-full">
+            Submit Presensi
+          </Button>
+        </form>
+      )}
 
       {/* Validation Modal */}
       <Modal

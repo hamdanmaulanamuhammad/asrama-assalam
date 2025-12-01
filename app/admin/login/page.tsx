@@ -6,12 +6,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import { loginAdmin, checkAdminSession } from '@/app/actions/auth';
-import { Shield, ArrowLeft } from 'lucide-react';
+import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -38,7 +42,8 @@ export default function AdminLoginPage() {
       router.push('/admin/dashboard');
       router.refresh();
     } else {
-      alert(result.error || 'Login gagal');
+      setErrorMessage(result.error || 'Login gagal');
+      setShowError(true);
     }
 
     setLoading(false);
@@ -77,19 +82,44 @@ export default function AdminLoginPage() {
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               required
             />
-            <Input
-              type="password"
-              label="Password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                label="Password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? 'Memproses...' : 'Login'}
             </Button>
           </form>
         </div>
       </div>
+
+      {/* Error Modal */}
+      <Modal
+        isOpen={showError}
+        onClose={() => setShowError(false)}
+        title="Login Gagal"
+        size="sm"
+      >
+        <div className="text-center space-y-4">
+          <div className="text-red-600 text-5xl">✕</div>
+          <p className="text-lg">{errorMessage}</p>
+          <Button onClick={() => setShowError(false)} className="w-full" variant="secondary">
+            OK
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

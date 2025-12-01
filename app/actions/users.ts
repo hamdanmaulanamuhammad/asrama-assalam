@@ -1,10 +1,10 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { unstable_cache, revalidatePath } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
-const getCachedUsers = unstable_cache(
-  async () => {
+export async function getUsers() {
+  try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('users')
@@ -12,18 +12,6 @@ const getCachedUsers = unstable_cache(
       .order('nama', { ascending: true });
 
     if (error) throw error;
-    return data;
-  },
-  ['users-list'],
-  {
-    revalidate: 60, // Cache for 60 seconds
-    tags: ['users']
-  }
-);
-
-export async function getUsers() {
-  try {
-    const data = await getCachedUsers();
     return { success: true, data };
   } catch (error: unknown) {
     console.error('Get users error:', error);

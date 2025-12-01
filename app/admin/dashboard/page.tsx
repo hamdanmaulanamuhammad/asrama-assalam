@@ -10,15 +10,18 @@ import { getUsers, createUser, updateUser, deleteUser } from '@/app/actions/user
 export default function AdminDashboardPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [nama, setNama] = useState('');
 
   const fetchUsers = async () => {
+    setLoadingData(true);
     const result = await getUsers();
     if (result.success && result.data) {
       setUsers(result.data);
     }
+    setLoadingData(false);
   };
 
   useEffect(() => {
@@ -92,7 +95,21 @@ export default function AdminDashboardPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {users.map((user) => (
+            {loadingData ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <tr key={idx} className="animate-pulse">
+                  <td className="px-6 py-4">
+                    <div className="h-4 bg-gray-200 rounded w-48"></div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : users.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium text-gray-900">{user.nama}</td>
                 <td className="px-6 py-4 text-right">
