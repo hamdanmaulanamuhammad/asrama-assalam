@@ -30,13 +30,13 @@ export async function checkDuplicateAttendance(nama_id: string, tanggal: string)
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('attendance')
-      .select('id, users:nama_id(nama)')
+      .select('id')
       .eq('nama_id', nama_id)
       .eq('tanggal', tanggal)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return { success: true, exists: !!data, nama: data?.users?.nama };
+    if (error) throw error;
+    return { success: true, exists: !!data };
   } catch (error) {
     return { success: false, error: 'Failed to check attendance' };
   }
