@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { v2 as cloudinary } from 'cloudinary';
 import sharp from 'sharp';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: 'dpocflacv',
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,23 +59,25 @@ export async function POST(request: NextRequest) {
       .jpeg({ quality: 90 })
       .toBuffer();
 
-    // Generate unique filename
-    const fileName = `${Date.now()}.jpg`;
-    
-    // Ensure uploads directory exists
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadsDir, { recursive: true });
-    
-    // Save to public/uploads directory
-    const filePath = join(uploadsDir, fileName);
-    await writeFile(filePath, processedImage);
-
-    // Return the public URL
-    const publicUrl = `/uploads/${fileName}`;
+    // Upload to Cloudinary
+    const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'presensi-assalam',
+          resource_type: 'image',
+          format: 'jpg',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result as { secure_url: string });
+        }
+      );
+      uploadStream.end(processedImage);
+    });
 
     return NextResponse.json({ 
       success: true, 
-      url: publicUrl 
+      url: uploadResult.secure_url 
     });
   } catch (error) {
     console.error('Upload error:', error);
