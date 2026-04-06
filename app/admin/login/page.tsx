@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { loginAdmin, checkAdminSession } from '@/app/actions/auth';
-import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -21,16 +21,16 @@ export default function AdminLoginPage() {
     password: '',
   });
 
-  useEffect(() => {
-    checkSession();
-  }, []);
-
   const checkSession = async () => {
     const { isAuthenticated } = await checkAdminSession();
     if (isAuthenticated) {
       router.push('/admin/dashboard');
     }
   };
+
+  useEffect(() => {
+    checkSession();
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

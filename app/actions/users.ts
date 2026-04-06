@@ -1,18 +1,20 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export async function getUsers() {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('nama', { ascending: true });
-
-    if (error) throw error;
-    return { success: true, data };
+    const db = getDb();
+    const { rows } = await db.query(
+      `SELECT
+         id,
+         nama,
+         created_at::text AS created_at
+       FROM users
+       ORDER BY nama ASC`
+    );
+    return { success: true, data: rows };
   } catch (error: unknown) {
     console.error('Get users error:', error);
     const message = error instanceof Error ? error.message : 'Failed to fetch users';
@@ -22,17 +24,16 @@ export async function getUsers() {
 
 export async function createUser(nama: string) {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('users')
-      .insert({ nama })
-      .select()
-      .single();
-
-    if (error) throw error;
+    const db = getDb();
+    const { rows } = await db.query(
+      `INSERT INTO users (nama)
+       VALUES ($1)
+       RETURNING id, nama, created_at::text AS created_at`,
+      [nama]
+    );
     revalidatePath('/', 'layout');
     revalidatePath('/admin/dashboard');
-    return { success: true, data };
+    return { success: true, data: rows[0] };
   } catch (error: unknown) {
     console.error('Create user error:', error);
     const message = error instanceof Error ? error.message : 'Failed to create user';
@@ -42,15 +43,11 @@ export async function createUser(nama: string) {
 
 export async function updateUser(id: string, nama: string) {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('users')
-      .update({ nama })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
+    const db = getDb();
+    await db.query(
+      'UPDATE users SET nama = $1 WHERE id = $2',
+      [nama, id]
+    );
     revalidatePath('/', 'layout');
     revalidatePath('/admin/dashboard');
     return { success: true };
@@ -63,13 +60,8 @@ export async function updateUser(id: string, nama: string) {
 
 export async function deleteUser(id: string) {
   try {
-    const supabase = await createClient();
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    const db = getDb();
+    await db.query('DELETE FROM users WHERE id = $1', [id]);
     revalidatePath('/');
     revalidatePath('/admin/dashboard');
     return { success: true };

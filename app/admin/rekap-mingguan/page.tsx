@@ -2,14 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Select from '@/components/ui/Select';
-import Modal from '@/components/ui/Modal';
 import { AttendanceWithUser, User } from '@/lib/types';
 import { getAttendance } from '@/app/actions/attendance';
 import { getUsers } from '@/app/actions/users';
 import { format, parseISO, startOfMonth, endOfMonth, eachWeekOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { X } from 'lucide-react';
-// import { revalidatePath } from 'next/cache';
+
+function toDate(value: string | Date) {
+  return value instanceof Date ? value : parseISO(value);
+}
+
+function toDateKey(value: string | Date) {
+  return format(toDate(value), 'yyyy-MM-dd');
+}
+
 export default function RekapMingguanPage() {
   const [attendances, setAttendances] = useState<AttendanceWithUser[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -23,37 +30,40 @@ export default function RekapMingguanPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [attendanceResult, usersResult] = await Promise.all([
-      getAttendance({}),
-      getUsers(),
-    ]);
+    try {
+      const [attendanceResult, usersResult] = await Promise.all([
+        getAttendance({}),
+        getUsers(),
+      ]);
 
-    if (attendanceResult.success && attendanceResult.data) {
-      const data = attendanceResult.data as AttendanceWithUser[];
-      setAttendances(data);
-      
-      // Generate months from data
-      const monthSet = new Set<string>();
-      data.forEach(att => {
-        const date = parseISO(att.tanggal);
-        monthSet.add(format(date, 'yyyy-MM'));
-      });
-      
-      const monthOptions = Array.from(monthSet).map(m => ({
-        value: m,
-        label: format(new Date(m + '-01'), 'MMMM yyyy', { locale: localeId }),
-      })).sort((a, b) => b.value.localeCompare(a.value));
-      
-      setMonths(monthOptions);
-      if (monthOptions.length > 0) {
-        setSelectedMonth(monthOptions[0].value);
+      if (attendanceResult.success && attendanceResult.data) {
+        const data = attendanceResult.data as AttendanceWithUser[];
+        setAttendances(data);
+
+        const monthSet = new Set<string>();
+        data.forEach((att) => {
+          monthSet.add(format(toDate(att.tanggal), 'yyyy-MM'));
+        });
+
+        const monthOptions = Array.from(monthSet).map((m) => ({
+          value: m,
+          label: format(new Date(`${m}-01`), 'MMMM yyyy', { locale: localeId }),
+        })).sort((a, b) => b.value.localeCompare(a.value));
+
+        setMonths(monthOptions);
+        if (monthOptions.length > 0) {
+          setSelectedMonth(monthOptions[0].value);
+        }
       }
-    }
 
-    if (usersResult.success && usersResult.data) {
-      setUsers(usersResult.data);
+      if (usersResult.success && usersResult.data) {
+        setUsers(usersResult.data);
+      }
+    } catch (error) {
+      console.error('Fetch weekly attendance failed:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Generate weeks when month changes
@@ -83,7 +93,6 @@ export default function RekapMingguanPage() {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const groupedData = () => {
@@ -92,7 +101,7 @@ export default function RekapMingguanPage() {
     // Filter by month
     if (selectedMonth) {
       filtered = filtered.filter(att => {
-        const date = parseISO(att.tanggal);
+        const date = toDate(att.tanggal);
         return format(date, 'yyyy-MM') === selectedMonth;
       });
     }
@@ -103,7 +112,7 @@ export default function RekapMingguanPage() {
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
       
       filtered = filtered.filter(att => {
-        const date = parseISO(att.tanggal);
+        const date = toDate(att.tanggal);
         return date >= weekStart && date <= weekEnd;
       });
     }
@@ -115,7 +124,7 @@ export default function RekapMingguanPage() {
     // Group by date
     const grouped: { [key: string]: AttendanceWithUser[] } = {};
     filtered.forEach(att => {
-      const date = att.tanggal;
+      const date = toDateKey(att.tanggal);
       if (!grouped[date]) grouped[date] = [];
       grouped[date].push(att);
     });
@@ -192,7 +201,7 @@ export default function RekapMingguanPage() {
               <div key={date} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-linear-to-r from-blue-500 to-blue-600 px-4 md:px-6 py-4">
                   <h3 className="text-lg font-semibold text-white">
-                    {format(parseISO(date), 'EEEE, dd MMMM yyyy', { locale: localeId })}
+                    {format(toDate(date), 'EEEE, dd MMMM yyyy', { locale: localeId })}
                   </h3>
                   <p className="text-blue-100 text-sm mt-0.5">{items.length} presensi</p>
                 </div>

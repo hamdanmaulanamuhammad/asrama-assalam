@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Select from '@/components/ui/Select';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import { AttendanceWithUser, User } from '@/lib/types';
-import { getAttendance } from '@/app/actions/attendance';
+import { deleteAttendance, getAttendance } from '@/app/actions/attendance';
 import { getUsers } from '@/app/actions/users';
 import { formatDate, formatTime } from '@/lib/utils';
 import { X } from 'lucide-react';
@@ -15,6 +16,10 @@ export default function RekapPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState<AttendanceWithUser | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [filters, setFilters] = useState({
     nama_id: '',
     status: '',
@@ -56,6 +61,39 @@ export default function RekapPage() {
       date_to: '',
     });
     fetchData();
+  };
+
+  const openDeleteModal = (attendance: AttendanceWithUser) => {
+    setSelectedAttendance(attendance);
+    setShowDeleteConfirm(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (deleting) return;
+    setShowDeleteConfirm(false);
+    setSelectedAttendance(null);
+  };
+
+  const handleDeleteAttendance = async () => {
+    if (!selectedAttendance) return;
+
+    setDeleting(true);
+    const result = await deleteAttendance(selectedAttendance.id);
+
+    if (result.success) {
+      await fetchData();
+      setShowDeleteConfirm(false);
+      setShowDeleteSuccess(true);
+    } else {
+      alert(result.error || 'Gagal menghapus presensi');
+    }
+
+    setDeleting(false);
+  };
+
+  const closeSuccessModal = () => {
+    setShowDeleteSuccess(false);
+    setSelectedAttendance(null);
   };
 
   return (
@@ -111,6 +149,7 @@ export default function RekapPage() {
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tukar</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Waktu</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Foto</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -124,11 +163,12 @@ export default function RekapPage() {
                   <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
                   <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
                   <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-12"></div></td>
+                  <td className="px-4 py-4"><div className="h-8 bg-gray-200 rounded w-16"></div></td>
                 </tr>
               ))
             ) : attendances.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center gap-2">
                     <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -164,6 +204,16 @@ export default function RekapPage() {
                       Lihat
                     </button>
                   </td>
+                  <td className="px-4 py-4 text-sm">
+                    <Button
+                      type="button"
+                      variant="danger"
+                      className="px-3 py-1 text-sm"
+                      onClick={() => openDeleteModal(attendance)}
+                    >
+                      Hapus
+                    </Button>
+                  </td>
                 </tr>
               ))
             )}
@@ -197,7 +247,7 @@ export default function RekapPage() {
             <p className="text-gray-500">Tidak ada data presensi</p>
           </div>
         ) : (
-          attendances.map((attendance, idx) => (
+          attendances.map((attendance) => (
             <div key={attendance.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
               <div className="flex items-start gap-3 mb-3">
                 <img 
@@ -226,10 +276,70 @@ export default function RekapPage() {
                   Tukar dengan: <span className="font-medium">{attendance.tukar_dengan.nama}</span>
                 </div>
               )}
+              <div className="pt-3 mt-3 border-t border-gray-100">
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="w-full"
+                  onClick={() => openDeleteModal(attendance)}
+                >
+                  Hapus Presensi
+                </Button>
+              </div>
             </div>
           ))
         )}
       </div>
+
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={closeDeleteModal}
+        title="Konfirmasi Hapus"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            {selectedAttendance
+              ? `Yakin ingin menghapus presensi ${selectedAttendance.users.nama} pada ${formatDate(selectedAttendance.tanggal)}?`
+              : 'Yakin ingin menghapus presensi ini?'}
+          </p>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={closeDeleteModal}
+              disabled={deleting}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              className="flex-1"
+              onClick={handleDeleteAttendance}
+              disabled={deleting}
+            >
+              {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showDeleteSuccess}
+        onClose={closeSuccessModal}
+        title="Berhasil"
+        size="sm"
+      >
+        <div className="text-center space-y-4">
+          <div className="text-green-600 text-5xl">✓</div>
+          <p className="text-lg">Presensi berhasil dihapus.</p>
+          <Button type="button" className="w-full" onClick={closeSuccessModal}>
+            OK
+          </Button>
+        </div>
+      </Modal>
 
       {/* Modal Preview Foto */}
       {selectedImage && (

@@ -8,8 +8,8 @@ import Button from './ui/Button';
 import Modal from './ui/Modal';
 import ImageUpload from './ui/ImageUpload';
 import { User } from '@/lib/types';
-import { createClient } from '@/lib/supabase/client';
-import { checkDuplicateAttendance } from '@/app/actions/attendance';
+import { checkDuplicateAttendance, createAttendance } from '@/app/actions/attendance';
+import { getUsers } from '@/app/actions/users';
 import { getCache, setCache } from '@/lib/cache';
 
 export default function PresensiForm() {
@@ -54,11 +54,10 @@ export default function PresensiForm() {
     }
 
     // Fetch from database
-    const supabase = createClient();
-    const { data } = await supabase.from('users').select('*').order('nama');
-    if (data) {
-      setUsers(data);
-      setCache('users', data);
+    const result = await getUsers();
+    if (result.success && result.data) {
+      setUsers(result.data);
+      setCache('users', result.data);
     }
     setLoadingUsers(false);
   };
@@ -120,8 +119,7 @@ export default function PresensiForm() {
       if (!uploadResult.success) throw new Error('Upload failed');
 
       // Save attendance
-      const supabase = createClient();
-      const { error: insertError } = await supabase.from('attendance').insert({
+      const result = await createAttendance({
         tanggal: formData.tanggal,
         nama_id: formData.nama_id,
         status: formData.status,
@@ -130,7 +128,7 @@ export default function PresensiForm() {
         foto_url: uploadResult.url,
       });
 
-      if (insertError) throw insertError;
+      if (!result.success) throw new Error(result.error || 'Create attendance failed');
 
       setShowValidation(false);
       setShowSuccess(true);
@@ -144,7 +142,7 @@ export default function PresensiForm() {
         waktu: '',
         foto: null,
       });
-    } catch (error) {
+    } catch {
       alert('Gagal menyimpan presensi');
     } finally {
       setLoading(false);
