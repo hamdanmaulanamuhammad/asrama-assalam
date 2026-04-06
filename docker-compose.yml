@@ -4,7 +4,7 @@ services:
     container_name: presensi-db
     restart: unless-stopped
     env_file:
-      - .env.docker
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -29,7 +29,7 @@ services:
     container_name: presensi-app
     restart: unless-stopped
     env_file:
-      - .env.docker
+      - .env
     ports:
       - "${PORT:-3111}:3111"
     depends_on:
