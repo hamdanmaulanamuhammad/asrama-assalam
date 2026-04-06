@@ -31,7 +31,7 @@ services:
     env_file:
       - .env.docker
     ports:
-      - "${PORT:-3001}:3000"
+      - "${PORT:-3111}:3111"
     depends_on:
       db:
         condition: service_healthy
